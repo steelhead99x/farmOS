@@ -99,6 +99,7 @@ requirements (inherited from Drupal 11):
 
 ### Fixed
 
+- [Prevent a missing inventory quick form asset from making the site inaccessible #1122](https://github.com/farmOS/farmOS/issues/1122)
 - [Fix plan_record bundle field providers #969](https://github.com/farmOS/farmOS/pull/969)
 - [Fix logic for forcing entity revision creation #988](https://github.com/farmOS/farmOS/pull/969)
 - [Fix CSV importer compatibility with migrate_source_ui v1.3+ #993](https://github.com/farmOS/farmOS/pull/993)

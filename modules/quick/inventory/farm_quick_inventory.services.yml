@@ -1,0 +1,6 @@
+services:
+  _defaults:
+    autowire: true
+  farm_quick_inventory.asset_reference:
+    class: Drupal\farm_quick_inventory\InventoryAssetReference
+  Drupal\farm_quick_inventory\InventoryAssetReference: '@farm_quick_inventory.asset_reference'

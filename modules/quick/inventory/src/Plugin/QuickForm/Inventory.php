@@ -75,11 +75,48 @@ class Inventory extends QuickFormBase implements ConfigurableQuickFormInterface 
     // Check to ensure the user has permission to create the configured log type
     // and view the configured asset.
     $result = AccessResult::allowedIf($this->entityTypeManager->getAccessControlHandler('log')->createAccess($this->configuration['log_type'], $account));
+    $result->addCacheTags($this->quickFormCacheTags());
     if (!empty($this->configuration['asset'])) {
-      $asset = $this->entityTypeManager->getStorage('asset')->load($this->configuration['asset']);
-      $result = $result->andIf(AccessResult::allowedIf($asset->access('view')));
+      $asset = $this->loadConfiguredAsset();
+
+      // This access check runs while the main menu is built. A configured
+      // asset that has been deleted must not be called as an object.
+      if (!$asset instanceof AssetInterface) {
+        return AccessResult::forbidden('The configured inventory asset does not exist.')->addCacheTags(array_merge(
+          ['asset:' . $this->configuration['asset']],
+          $this->quickFormCacheTags(),
+        ));
+      }
+      $result = $result->andIf(AccessResult::allowedIf($asset->access('view', $account))->addCacheableDependency($asset));
     }
     return $result;
+  }
+
+  /**
+   * Cache tags for the quick form instance that owns this plugin.
+   *
+   * @return string[]
+   *   Cache tags invalidated when quick form configuration changes.
+   */
+  protected function quickFormCacheTags(): array {
+    return [
+      'config:farm_quick.quick_form.' . $this->getQuickId(),
+      'quick_form_list',
+    ];
+  }
+
+  /**
+   * Loads the configured default asset, if it still exists.
+   *
+   * @return \Drupal\asset\Entity\AssetInterface|null
+   *   The asset, or NULL if it is not configured or no longer exists.
+   */
+  protected function loadConfiguredAsset(): ?AssetInterface {
+    if (empty($this->configuration['asset'])) {
+      return NULL;
+    }
+    $asset = $this->entityTypeManager->getStorage('asset')->load($this->configuration['asset']);
+    return $asset instanceof AssetInterface ? $asset : NULL;
   }
 
   /**
@@ -123,8 +160,8 @@ class Inventory extends QuickFormBase implements ConfigurableQuickFormInterface 
       '#maxlength' => 1024,
       '#required' => TRUE,
     ];
-    if (!empty($this->configuration['asset'])) {
-      $form['asset']['#default_value'] = $this->entityTypeManager->getStorage('asset')->load($this->configuration['asset']);
+    if ($asset = $this->loadConfiguredAsset()) {
+      $form['asset']['#default_value'] = $asset;
     }
 
     // Quantity.
@@ -403,8 +440,8 @@ class Inventory extends QuickFormBase implements ConfigurableQuickFormInterface 
       ],
       '#maxlength' => 1024,
     ];
-    if (!empty($this->configuration['asset'])) {
-      $form['asset']['#default_value'] = $this->entityTypeManager->getStorage('asset')->load($this->configuration['asset']);
+    if ($asset = $this->loadConfiguredAsset()) {
+      $form['asset']['#default_value'] = $asset;
     }
 
     // Units.
